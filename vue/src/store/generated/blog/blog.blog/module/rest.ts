@@ -9,6 +9,34 @@
  * ---------------------------------------------------------------
  */
 
+export interface BlogMsgCreatePostResponse {
+  /** @format uint64 */
+  id?: string;
+}
+
+export type BlogMsgDeletePostResponse = object;
+
+export type BlogMsgUpdatePostResponse = object;
+
+export interface BlogQueryAllPostResponse {
+  Post?: BlogblogPost[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
+export interface BlogQueryGetPostResponse {
+  Post?: BlogblogPost;
+}
+
 /**
  * QueryParamsResponse is response type for the Query/Params RPC method.
  */
@@ -22,6 +50,14 @@ export interface BlogQueryParamsResponse {
  */
 export type BlogblogParams = object;
 
+export interface BlogblogPost {
+  /** @format uint64 */
+  id?: string;
+  title?: string;
+  body?: string;
+  creator?: string;
+}
+
 export interface ProtobufAny {
   "@type"?: string;
 }
@@ -31,6 +67,69 @@ export interface RpcStatus {
   code?: number;
   message?: string;
   details?: ProtobufAny[];
+}
+
+/**
+* message SomeRequest {
+         Foo some_parameter = 1;
+         PageRequest pagination = 2;
+ }
+*/
+export interface V1Beta1PageRequest {
+  /**
+   * key is a value returned in PageResponse.next_key to begin
+   * querying the next page most efficiently. Only one of offset or key
+   * should be set.
+   * @format byte
+   */
+  key?: string;
+
+  /**
+   * offset is a numeric offset that can be used when key is unavailable.
+   * It is less efficient than using key. Only one of offset or key should
+   * be set.
+   * @format uint64
+   */
+  offset?: string;
+
+  /**
+   * limit is the total number of results to be returned in the result page.
+   * If left empty it will default to a value to be set by each app.
+   * @format uint64
+   */
+  limit?: string;
+
+  /**
+   * count_total is set to true  to indicate that the result set should include
+   * a count of the total number of items available for pagination in UIs.
+   * count_total is only respected when offset is used. It is ignored when key
+   * is set.
+   */
+  count_total?: boolean;
+
+  /**
+   * reverse is set to true if results are to be returned in the descending order.
+   *
+   * Since: cosmos-sdk 0.43
+   */
+  reverse?: boolean;
+}
+
+/**
+* PageResponse is to be embedded in gRPC response messages where the
+corresponding request message has used PageRequest.
+
+ message SomeResponse {
+         repeated Bar results = 1;
+         PageResponse page = 2;
+ }
+*/
+export interface V1Beta1PageResponse {
+  /** @format byte */
+  next_key?: string;
+
+  /** @format uint64 */
+  total?: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -240,6 +339,48 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryParams = (params: RequestParams = {}) =>
     this.request<BlogQueryParamsResponse, RpcStatus>({
       path: `/blog/blog/params`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPostAll
+   * @summary Queries a list of Post items.
+   * @request GET:/blog/blog/post
+   */
+  queryPostAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.count_total"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<BlogQueryAllPostResponse, RpcStatus>({
+      path: `/blog/blog/post`,
+      method: "GET",
+      query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPost
+   * @summary Queries a Post by id.
+   * @request GET:/blog/blog/post/{id}
+   */
+  queryPost = (id: string, params: RequestParams = {}) =>
+    this.request<BlogQueryGetPostResponse, RpcStatus>({
+      path: `/blog/blog/post/${id}`,
       method: "GET",
       format: "json",
       ...params,
